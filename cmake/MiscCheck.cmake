@@ -36,6 +36,11 @@ else()
   add_definitions(-DCAFFE2_NO_BUILTIN_CPU_SUPPORTS)
 endif()
 
+# ---[ Check if we want to build Caffe proto.
+if (USE_CAFFE_PROTO)
+  add_definitions(-DCAFFE2_BUILD_USE_CAFFE_PROTO)
+endif()
+
 # Note(jiayq): on ubuntu 14.04, the default glog install uses ext/hash_set that
 # is being deprecated. As a result, we will test if this is the environment we
 # are building under. If yes, we will turn off deprecation warning for a

@@ -5,7 +5,9 @@
 
 #include <iostream>
 
+#ifdef CAFFE2_BUILD_USE_CAFFE_PROTO
 #include "caffe/proto/caffe.pb.h"
+#endif // CAFFE2_BUILD_USE_CAFFE_PROTO
 #include "caffe2/core/db.h"
 #include "caffe2/utils/math.h"
 #include "caffe2/utils/thread_pool.h"
@@ -90,6 +92,13 @@ ImageInputOp<Context>::ImageInputOp(
               "decode_threads", 4)),
         thread_pool_(new TaskThreadPool(num_decode_threads_))
 {
+#ifndef CAFFE2_BUILD_USE_CAFFE_PROTO
+  CAFFE_ENFORCE_EQ(
+      use_caffe_datum, 0,
+      "This Caffe2 is not built with Caffe proto, and as a result it does not "
+      "support reading caffe datum files.");
+#endif // CAFFE2_BUILD_USE_CAFFE_PROTO
+
   if (operator_def.input_size() == 0) {
     LOG(ERROR) << "You are using an old ImageInputOp format that creates "
                        "a local db reader. Consider moving to the new style "
@@ -143,6 +152,7 @@ bool ImageInputOp<Context>::GetImageAndLabelFromDBValue(
   //
   cv::Mat src;
   if (use_caffe_datum_) {
+#ifdef CAFFE2_BUILD_USE_CAFFE_PROTO
     // The input is a caffe datum format.
     caffe::Datum datum;
     CAFFE_ENFORCE(datum.ParseFromString(value));
@@ -183,6 +193,10 @@ bool ImageInputOp<Context>::GetImageAndLabelFromDBValue(
         }
       }
     }
+#else // CAFFE2_BUILD_USE_CAFFE_PROTO
+    LOG(FATAL) << "This code path should never happen, as the constructor "
+                  "already guards against this path with use_caffe_datum."
+#endif // CAFFE2_BUILD_USE_CAFFE_PROTO
   } else {
     // The input is a caffe2 format.
     TensorProtos protos;
